@@ -1,4 +1,5 @@
 
+rm(list=ls())
 
 library(shiny)
 library(dplyr)
@@ -10,7 +11,7 @@ options(
   # whenever there is one account token found, use the cached token
   gargle_oauth_email = TRUE,
   # specify auth tokens should be stored in a hidden directory ".secrets"
-  gargle_oauth_cache = "your-app-folder-name/.secrets"
+  gargle_oauth_cache = "tolkens/.secrets"
 )
 
 # Authenticate tidyverse on Google
@@ -21,16 +22,22 @@ options(
 sheet_id <- "1dlFFdawLIUJdLsjuqD_RfLrYGtaTGmpsl-fINAbM52w"
 
 # Define UI
-# Define UI
 ui <- fluidPage(
   tags$head(
     tags$script("
       $(document).on('wheel', 'input[type=number]', function (e) {
         $(this).blur();
       });
-    ")
+    "),
+    tags$style(HTML("
+      #push_to_sheets {
+        margin-top: 50px; /* Adjust the margin-top to move the button down */
+        background-color: red; /* Change the background color to red */
+        border-color: red; /* Change the border color to red */
+      }
+    "))
   ),
-  titlePanel("Data Entry App"),
+  titlePanel("Data entry app for \nsea urchin dissections"),
   sidebarLayout(
     sidebarPanel(
       textInput("data_enterer", "Name of Data Enterer"),
@@ -209,3 +216,5 @@ server <- function(input, output, session) {
 
 # Run the application
 shinyApp(ui = ui, server = server)
+
+
