@@ -18,7 +18,7 @@ options(
 # googlesheets4::gs4_auth()
 
 # Read the sheet
-sheet_id <- "1dlFFdawLIUJdLsjuqD_RfLrYGtaTGmpsl-fINAbM52w"
+sheet_id <- "1Ih-hBXRtfXVMdxw5ibZnXy_dZErdcx5FfeKMSc0HEc4"
 
 ui <- fluidPage(
   tags$head(
@@ -206,14 +206,38 @@ server <- function(input, output, session) {
   })
   
   # Event handler for "Yes" button in the confirmation dialog
+  # Event handler for "Yes" button in the confirmation dialog
   observeEvent(input$yes_push, {
     removeModal()
-    push_to_sheets()
+    push_to_sheets() # This function pushes the data
+    
+    # Show a modal dialog to confirm that data has been pushed
     showModal(modalDialog(
       title = "Data Pushed to Google Sheets",
       "Data has been successfully pushed to Google Sheets."
     ))
-    # Clear all entries after pushing data
+    
+    # Reset the data reactive variable to its initial empty state
+    data(data.frame(
+      Data_Enterer = character(),
+      Date_Collected = character(),
+      Date_Fixed = character(),
+      Date_Processed = character(),
+      Site_Number = character(),
+      Treatment = character(),
+      Species = character(),
+      Sample_Number = character(),
+      Test_Height_mm = numeric(),
+      Test_Diameter_mm = numeric(),
+      Animal_Wet_Mass_g = numeric(),
+      Animal_24hr_Mass_g = numeric(),
+      Gonad_Wet_Mass_g = numeric(),
+      Notes = character(),
+      Date_Entered = character(),
+      stringsAsFactors = FALSE
+    ))
+    
+    # Clear all input fields to reflect the reset in the UI
     updateDateInput(session, "date_collected", value = NULL)
     updateDateInput(session, "date_fixed", value = NULL)
     updateDateInput(session, "date_processed", value = NULL)
@@ -228,6 +252,7 @@ server <- function(input, output, session) {
     updateNumericInput(session, "gonad_wet_mass_g", value = NA)
     updateTextInput(session, "notes", value = "")
   })
+  
   
   # Render data table
   output$data_table <- renderDT({
