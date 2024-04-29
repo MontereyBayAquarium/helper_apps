@@ -91,7 +91,7 @@ sidebarLayout(
     numericInput("gonad_wet_mass_g", "Gonad Wet Mass (g)", value = NULL, step = 0.001),
     numericInput("soft_tissue_mass_g", "Soft Tissue Mass (g)", value = NULL, step = 0.001), # Added this line
     textInput("notes", "Notes"),
-    actionButton("submit_sample", "Submit Sample", class = "btn-primary"),
+    actionButton("stage_sample", "Stage Sample", class = "btn-primary"),
     actionButton("clear_fields", "New Site", class = "btn-primary"), 
     actionButton("push_to_sheets", "Push to server", class = "btn-primary"),
     br()
@@ -126,7 +126,7 @@ server <- function(input, output, session) {
   ))
   
   # Reactive function to update data frame when sample is submitted
-  observeEvent(input$submit_sample, {
+  observeEvent(input$stage_sample, {
     isolate({
       new_row <- data.frame(
         Data_Enterer = input$data_enterer,
