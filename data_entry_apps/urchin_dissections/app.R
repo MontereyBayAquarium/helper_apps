@@ -89,6 +89,7 @@ sidebarLayout(
     numericInput("animal_wet_mass_g", "Animal Wet Mass (g)", value = NULL, step = 0.001),
     numericInput("animal_24hr_mass_g", "Animal 24/hr Mass (g)", value = NULL, step = 0.001),
     numericInput("gonad_wet_mass_g", "Gonad Wet Mass (g)", value = NULL, step = 0.001),
+    numericInput("soft_tissue_mass_g", "Soft Tissue Mass (g)", value = NULL, step = 0.001), # Added this line
     textInput("notes", "Notes"),
     actionButton("submit_sample", "Submit Sample", class = "btn-primary"),
     actionButton("clear_fields", "New Site", class = "btn-primary"), 
@@ -118,6 +119,7 @@ server <- function(input, output, session) {
     Animal_Wet_Mass_g = numeric(),
     Animal_24hr_Mass_g = numeric(),
     Gonad_Wet_Mass_g = numeric(),
+    Soft_Tissue_Mass_g = numeric(), # Added this line
     Notes = character(),
     Date_Entered = character(),
     stringsAsFactors = FALSE
@@ -140,6 +142,7 @@ server <- function(input, output, session) {
         Animal_Wet_Mass_g = input$animal_wet_mass_g,
         Animal_24hr_Mass_g = input$animal_24hr_mass_g,
         Gonad_Wet_Mass_g = input$gonad_wet_mass_g,
+        Soft_Tissue_Mass_g = input$soft_tissue_mass_g, # Added this line
         Notes = input$notes,
         Date_Entered = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
         stringsAsFactors = FALSE
@@ -154,6 +157,7 @@ server <- function(input, output, session) {
       updateNumericInput(session, "animal_wet_mass_g", value = NA)
       updateNumericInput(session, "animal_24hr_mass_g", value = NA)
       updateNumericInput(session, "gonad_wet_mass_g", value = NA)
+      updateNumericInput(session, "soft_tissue_mass_g", value = NA) # Added this line
       updateTextInput(session, "notes", value = "")
     })
   })
@@ -172,6 +176,7 @@ server <- function(input, output, session) {
     updateNumericInput(session, "animal_wet_mass_g", value = NA)
     updateNumericInput(session, "animal_24hr_mass_g", value = NA)
     updateNumericInput(session, "gonad_wet_mass_g", value = NA)
+    updateNumericInput(session, "soft_tissue_mass_g", value = NA) # Added this line
     updateTextInput(session, "notes", value = "")
   })
   
@@ -206,7 +211,6 @@ server <- function(input, output, session) {
   })
   
   # Event handler for "Yes" button in the confirmation dialog
-  # Event handler for "Yes" button in the confirmation dialog
   observeEvent(input$yes_push, {
     removeModal()
     push_to_sheets() # This function pushes the data
@@ -232,6 +236,7 @@ server <- function(input, output, session) {
       Animal_Wet_Mass_g = numeric(),
       Animal_24hr_Mass_g = numeric(),
       Gonad_Wet_Mass_g = numeric(),
+      Soft_Tissue_Mass_g = numeric(), # Added this line
       Notes = character(),
       Date_Entered = character(),
       stringsAsFactors = FALSE
@@ -250,6 +255,7 @@ server <- function(input, output, session) {
     updateNumericInput(session, "animal_wet_mass_g", value = NA)
     updateNumericInput(session, "animal_24hr_mass_g", value = NA)
     updateNumericInput(session, "gonad_wet_mass_g", value = NA)
+    updateNumericInput(session, "soft_tissue_mass_g", value = NA) # Added this line
     updateTextInput(session, "notes", value = "")
   })
   
@@ -280,7 +286,8 @@ server <- function(input, output, session) {
                     $('#animal_wet_mass_g').val(data[10]);
                     $('#animal_24hr_mass_g').val(data[11]);
                     $('#gonad_wet_mass_g').val(data[12]);
-                    $('#notes').val(data[13]);
+                    $('#soft_tissue_mass_g').val(data[13]); // Modified this line
+                    $('#notes').val(data[14]);
                 });"
               )
     )
