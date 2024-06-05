@@ -5,9 +5,9 @@ account: joshuagsmith
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 11895559
-bundleId: 8556664
+bundleId: 8705514
 url: https://joshuagsmith.shinyapps.io/urchin_dissection_data_entry/
-when: 1714426373.53933
-lastSyncTime: 1714426373.53935
+when: 1717605991.40794
+lastSyncTime: 1717605991.40796
 asMultiple: FALSE
 asStatic: FALSE

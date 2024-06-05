@@ -75,6 +75,11 @@ ui <- fluidPage(
 titlePanel("Data entry app for sea urchin dissections", windowTitle = "Sea Urchin Data Entry"),
 sidebarLayout(
   sidebarPanel(
+    selectInput("institution", "Institution", choices = c("MBA", "UCSC", "Other")),
+    conditionalPanel(
+      condition = "input.institution == 'Other'",
+      textInput("other_institution", "Please specify other institution")
+    ),
     textInput("data_enterer", "Name of Data Enterer"),
     dateInput("date_collected", "Date Collected", value = NULL),
     dateInput("date_fixed", "Date Fixed", value = NULL),
@@ -89,7 +94,7 @@ sidebarLayout(
     numericInput("animal_wet_mass_g", "Animal Wet Mass (g)", value = NULL, step = 0.001),
     numericInput("animal_24hr_mass_g", "Animal 24/hr Mass (g)", value = NULL, step = 0.001),
     numericInput("gonad_wet_mass_g", "Gonad Wet Mass (g)", value = NULL, step = 0.001),
-    numericInput("soft_tissue_mass_g", "Soft Tissue Mass (g)", value = NULL, step = 0.001), # Added this line
+    numericInput("soft_tissue_mass_g", "Soft Tissue Mass (g)", value = NULL, step = 0.001),
     textInput("notes", "Notes"),
     actionButton("stage_sample", "Stage Sample", class = "btn-primary"),
     actionButton("clear_fields", "New Site", class = "btn-primary"), 
@@ -106,6 +111,7 @@ sidebarLayout(
 server <- function(input, output, session) {
   # Initialize data frame to store data
   data <- reactiveVal(data.frame(
+    Institution = character(), # Added this line
     Data_Enterer = character(),
     Date_Collected = character(),
     Date_Fixed = character(),
@@ -119,7 +125,7 @@ server <- function(input, output, session) {
     Animal_Wet_Mass_g = numeric(),
     Animal_24hr_Mass_g = numeric(),
     Gonad_Wet_Mass_g = numeric(),
-    Soft_Tissue_Mass_g = numeric(), # Added this line
+    Soft_Tissue_Mass_g = numeric(), 
     Notes = character(),
     Date_Entered = character(),
     stringsAsFactors = FALSE
@@ -128,7 +134,9 @@ server <- function(input, output, session) {
   # Reactive function to update data frame when sample is submitted
   observeEvent(input$stage_sample, {
     isolate({
+      institution <- if (input$institution == "Other") input$other_institution else input$institution
       new_row <- data.frame(
+        Institution = institution, # Added this line
         Data_Enterer = input$data_enterer,
         Date_Collected = rep(as.character(input$date_collected), length(input$sample_number)),
         Date_Fixed = rep(as.character(input$date_fixed), length(input$sample_number)),
@@ -142,7 +150,7 @@ server <- function(input, output, session) {
         Animal_Wet_Mass_g = input$animal_wet_mass_g,
         Animal_24hr_Mass_g = input$animal_24hr_mass_g,
         Gonad_Wet_Mass_g = input$gonad_wet_mass_g,
-        Soft_Tissue_Mass_g = input$soft_tissue_mass_g, # Added this line
+        Soft_Tissue_Mass_g = input$soft_tissue_mass_g, 
         Notes = input$notes,
         Date_Entered = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
         stringsAsFactors = FALSE
@@ -157,13 +165,15 @@ server <- function(input, output, session) {
       updateNumericInput(session, "animal_wet_mass_g", value = NA)
       updateNumericInput(session, "animal_24hr_mass_g", value = NA)
       updateNumericInput(session, "gonad_wet_mass_g", value = NA)
-      updateNumericInput(session, "soft_tissue_mass_g", value = NA) # Added this line
+      updateNumericInput(session, "soft_tissue_mass_g", value = NA) 
       updateTextInput(session, "notes", value = "")
     })
   })
   
   # Reactive function to clear all fields
   observeEvent(input$clear_fields, {
+    updateSelectInput(session, "institution", selected = "MBA")
+    updateTextInput(session, "other_institution", value = "")
     updateDateInput(session, "date_collected", value = NULL)
     updateDateInput(session, "date_fixed", value = NULL)
     updateDateInput(session, "date_processed", value = NULL)
@@ -176,7 +186,7 @@ server <- function(input, output, session) {
     updateNumericInput(session, "animal_wet_mass_g", value = NA)
     updateNumericInput(session, "animal_24hr_mass_g", value = NA)
     updateNumericInput(session, "gonad_wet_mass_g", value = NA)
-    updateNumericInput(session, "soft_tissue_mass_g", value = NA) # Added this line
+    updateNumericInput(session, "soft_tissue_mass_g", value = NA) 
     updateTextInput(session, "notes", value = "")
   })
   
@@ -223,6 +233,7 @@ server <- function(input, output, session) {
     
     # Reset the data reactive variable to its initial empty state
     data(data.frame(
+      Institution = character(), # Added this line
       Data_Enterer = character(),
       Date_Collected = character(),
       Date_Fixed = character(),
@@ -236,13 +247,15 @@ server <- function(input, output, session) {
       Animal_Wet_Mass_g = numeric(),
       Animal_24hr_Mass_g = numeric(),
       Gonad_Wet_Mass_g = numeric(),
-      Soft_Tissue_Mass_g = numeric(), # Added this line
+      Soft_Tissue_Mass_g = numeric(), 
       Notes = character(),
       Date_Entered = character(),
       stringsAsFactors = FALSE
     ))
     
     # Clear all input fields to reflect the reset in the UI
+    updateSelectInput(session, "institution", selected = "MBA")
+    updateTextInput(session, "other_institution", value = "")
     updateDateInput(session, "date_collected", value = NULL)
     updateDateInput(session, "date_fixed", value = NULL)
     updateDateInput(session, "date_processed", value = NULL)
@@ -255,7 +268,7 @@ server <- function(input, output, session) {
     updateNumericInput(session, "animal_wet_mass_g", value = NA)
     updateNumericInput(session, "animal_24hr_mass_g", value = NA)
     updateNumericInput(session, "gonad_wet_mass_g", value = NA)
-    updateNumericInput(session, "soft_tissue_mass_g", value = NA) # Added this line
+    updateNumericInput(session, "soft_tissue_mass_g", value = NA) 
     updateTextInput(session, "notes", value = "")
   })
   
@@ -273,21 +286,22 @@ server <- function(input, output, session) {
               callback = JS(
                 "table.on('click', 'button.edit', function () {
                     var data = table.row($(this).parents('tr')).data();
-                    $('#data_enterer').val(data[0]);
-                    $('#date_collected').val(data[1]);
-                    $('#date_fixed').val(data[2]);
-                    $('#date_processed').val(data[3]);
-                    $('#site_number').val(data[4]);
-                    $('#treatment').val(data[5]);
-                    $('#species').val(data[6]);
-                    $('#sample_number').val(data[7]);
-                    $('#test_height_mm').val(data[8]);
-                    $('#test_diameter_mm').val(data[9]);
-                    $('#animal_wet_mass_g').val(data[10]);
-                    $('#animal_24hr_mass_g').val(data[11]);
-                    $('#gonad_wet_mass_g').val(data[12]);
-                    $('#soft_tissue_mass_g').val(data[13]); // Modified this line
-                    $('#notes').val(data[14]);
+                    $('#institution').val(data[0]);
+                    $('#data_enterer').val(data[1]);
+                    $('#date_collected').val(data[2]);
+                    $('#date_fixed').val(data[3]);
+                    $('#date_processed').val(data[4]);
+                    $('#site_number').val(data[5]);
+                    $('#treatment').val(data[6]);
+                    $('#species').val(data[7]);
+                    $('#sample_number').val(data[8]);
+                    $('#test_height_mm').val(data[9]);
+                    $('#test_diameter_mm').val(data[10]);
+                    $('#animal_wet_mass_g').val(data[11]);
+                    $('#animal_24hr_mass_g').val(data[12]);
+                    $('#gonad_wet_mass_g').val(data[13]);
+                    $('#soft_tissue_mass_g').val(data[14]);
+                    $('#notes').val(data[15]);
                 });"
               )
     )
