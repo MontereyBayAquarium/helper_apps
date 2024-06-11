@@ -82,7 +82,7 @@ sidebarLayout(
     selectInput("treatment", "Treatment", choices = c("5mmol MgCL", "70% EtOH", "95% EtOH"), selected = "5mmol MgCL"),
     selectInput("species", "Species", choices = c("purple_urchin", "red_urchin")),
     textInput("sample_number", "Sample Number"),
-    selectInput("sex", "Sex", choices = c("Male", "Female")),
+    selectInput("sex", "Sex", choices = c("Female", "Male")),
     numericInput("test_height_mm", "Test Height (mm)", value = NULL, step = 0.001),
     numericInput("test_diameter_mm", "Test Diameter (mm)", value = NULL, step = 0.001),
     numericInput("wet_mass_g", "Wet Mass (g)", value = NULL, step = 0.001),
