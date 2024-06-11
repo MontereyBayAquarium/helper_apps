@@ -7,15 +7,9 @@ library(googledrive)
 library(googlesheets4)
 
 options(
-  # whenever there is one account token found, use the cached token
   gargle_oauth_email = TRUE,
-  # specify auth tokens should be stored in a hidden directory ".secrets"
-  gargle_oauth_cache = "tolkens/.secrets"
+  gargle_oauth_cache = "tokens/.secrets"
 )
-
-# Authenticate tidyverse on Google
-# googledrive::drive_auth()
-# googlesheets4::gs4_auth()
 
 # Read the sheet
 sheet_id <- "1Ih-hBXRtfXVMdxw5ibZnXy_dZErdcx5FfeKMSc0HEc4"
@@ -34,14 +28,14 @@ ui <- fluidPage(
   }
   #push_to_sheets, .btn-primary {
     margin-top: 20px;
-    background-color: #007bff; /* Change this to #ff0000 for red */
-    border-color: #007bff; /* Change this to #ff0000 for red */
+    background-color: #007bff;
+    border-color: #007bff;
     border-radius: 20px;
     box-shadow: 0 2px 2px 0 rgba(0,0,0,.1);
   }
   #push_to_sheets:hover, .btn-primary:hover {
-    background-color: #0056b3; /* Change this to a darker red for hover */
-    border-color: #0056b3; /* Change this to a darker red for hover */
+    background-color: #0056b3;
+    border-color: #0056b3;
   }
   .form-control {
     border-radius: 20px;
@@ -61,13 +55,12 @@ ui <- fluidPage(
     border-radius: 20px;
     box-shadow: 0 4px 6px rgba(0,0,0,.1);
   }
-  /* Specific styles for the 'Push to server' button */
   #push_to_sheets {
-    background-color: #ff0000; /* Red */
-    border-color: #ff0000; /* Red */
+    background-color: #ff0000;
+    border-color: #ff0000;
   }
   #push_to_sheets:hover {
-    background-color: #cc0000; /* Darker shade of red for hover */
+    background-color: #cc0000;
     border-color: #cc0000;
   }
 "))
@@ -75,24 +68,25 @@ ui <- fluidPage(
 titlePanel("Data entry app for sea urchin dissections", windowTitle = "Sea Urchin Data Entry"),
 sidebarLayout(
   sidebarPanel(
-    selectInput("institution", "Institution", choices = c("MBA", "UCSC", "Other")),
+    selectInput("institution", "Institution", choices = c("MBA", "UCSC", "Other"), selected = "MBA"),
     conditionalPanel(
       condition = "input.institution == 'Other'",
-      textInput("other_institution", "Please specify other institution")
+      textInput("institution_other", "Enter Institution")
     ),
-    textInput("data_enterer", "Name of Data Enterer"),
+    textInput("observer_initials", "Observer Initials"),
     dateInput("date_collected", "Date Collected", value = NULL),
     dateInput("date_fixed", "Date Fixed", value = NULL),
-    dateInput("date_processed", "Date Processed", value = NULL),
-    textInput("site_number", "Site Number", value = NULL, placeholder = "Enter site number"),
-    selectInput("treatment", "Treatment", choices = c("95% EtOH","70% EtOH","40% EtOH", "5 mmol MgCL", "Other (indicate in notes)")),
-    br(),
+    dateInput("date_dissected", "Date Dissected", value = NULL),
+    textInput("site_number", "Site Number"),
+    textInput("transect", "Transect"),
+    selectInput("treatment", "Treatment", choices = c("5mmol MgCL", "70% EtOH", "95% EtOH"), selected = "5mmol MgCL"),
     selectInput("species", "Species", choices = c("purple_urchin", "red_urchin")),
     textInput("sample_number", "Sample Number"),
+    selectInput("sex", "Sex", choices = c("Male", "Female")),
     numericInput("test_height_mm", "Test Height (mm)", value = NULL, step = 0.001),
     numericInput("test_diameter_mm", "Test Diameter (mm)", value = NULL, step = 0.001),
-    numericInput("animal_wet_mass_g", "Animal Wet Mass (g)", value = NULL, step = 0.001),
-    numericInput("animal_24hr_mass_g", "Animal 24/hr Mass (g)", value = NULL, step = 0.001),
+    numericInput("wet_mass_g", "Wet Mass (g)", value = NULL, step = 0.001),
+    numericInput("wet_mass_24hr_g", "24hr Wet Mass (g)", value = NULL, step = 0.001),
     numericInput("gonad_wet_mass_g", "Gonad Wet Mass (g)", value = NULL, step = 0.001),
     numericInput("soft_tissue_mass_g", "Soft Tissue Mass (g)", value = NULL, step = 0.001),
     textInput("notes", "Notes"),
@@ -107,173 +101,173 @@ sidebarLayout(
 )
 )
 
-
 server <- function(input, output, session) {
-  # Initialize data frame to store data
   data <- reactiveVal(data.frame(
-    Institution = character(), # Added this line
-    Data_Enterer = character(),
+    Institution = character(),
+    Observer_Initials = character(),
     Date_Collected = character(),
     Date_Fixed = character(),
-    Date_Processed = character(),
+    Date_Dissected = character(),
     Site_Number = character(),
+    Transect = character(),
     Treatment = character(),
     Species = character(),
     Sample_Number = character(),
+    Sex = character(),
     Test_Height_mm = numeric(),
     Test_Diameter_mm = numeric(),
-    Animal_Wet_Mass_g = numeric(),
-    Animal_24hr_Mass_g = numeric(),
+    Wet_Mass_g = numeric(),
+    Wet_Mass_24hr_g = numeric(),
     Gonad_Wet_Mass_g = numeric(),
-    Soft_Tissue_Mass_g = numeric(), 
+    Soft_Tissue_Mass_g = numeric(),
     Notes = character(),
-    Date_Entered = character(),
     stringsAsFactors = FALSE
   ))
   
-  # Reactive function to update data frame when sample is submitted
   observeEvent(input$stage_sample, {
     isolate({
-      institution <- if (input$institution == "Other") input$other_institution else input$institution
+      institution <- if (input$institution == "Other") input$institution_other else input$institution
       new_row <- data.frame(
-        Institution = institution, # Added this line
-        Data_Enterer = input$data_enterer,
-        Date_Collected = rep(as.character(input$date_collected), length(input$sample_number)),
-        Date_Fixed = rep(as.character(input$date_fixed), length(input$sample_number)),
-        Date_Processed = rep(as.character(input$date_processed), length(input$sample_number)),
-        Site_Number = toupper(input$site_number), # Convert to uppercase
+        Institution = institution,
+        Observer_Initials = input$observer_initials,
+        Date_Collected = as.character(input$date_collected),
+        Date_Fixed = as.character(input$date_fixed),
+        Date_Dissected = as.character(input$date_dissected),
+        Site_Number = toupper(input$site_number),
+        Transect = input$transect,
         Treatment = input$treatment,
         Species = input$species,
         Sample_Number = input$sample_number,
+        Sex = input$sex,
         Test_Height_mm = input$test_height_mm,
         Test_Diameter_mm = input$test_diameter_mm,
-        Animal_Wet_Mass_g = input$animal_wet_mass_g,
-        Animal_24hr_Mass_g = input$animal_24hr_mass_g,
+        Wet_Mass_g = input$wet_mass_g,
+        Wet_Mass_24hr_g = input$wet_mass_24hr_g,
         Gonad_Wet_Mass_g = input$gonad_wet_mass_g,
-        Soft_Tissue_Mass_g = input$soft_tissue_mass_g, 
+        Soft_Tissue_Mass_g = input$soft_tissue_mass_g,
         Notes = input$notes,
-        Date_Entered = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
         stringsAsFactors = FALSE
       )
       data(bind_rows(data(), new_row))
       
-      # Clear input fields (except for metadata)
-      updateTextInput(session, "species", value = "")
+      # Clear input fields
+      updateSelectInput(session, "institution", selected = "MBA")
+      updateTextInput(session, "institution_other", value = "")
+      updateTextInput(session, "observer_initials", value = "")
+      updateDateInput(session, "date_collected", value = NULL)
+      updateDateInput(session, "date_fixed", value = NULL)
+      updateDateInput(session, "date_dissected", value = NULL)
+      updateTextInput(session, "site_number", value = "")
+      updateTextInput(session, "transect", value = "")
+      updateSelectInput(session, "treatment", selected = "5mmol MgCL")
+      updateSelectInput(session, "species", selected = "")
       updateTextInput(session, "sample_number", value = "")
+      updateSelectInput(session, "sex", selected = "")
       updateNumericInput(session, "test_height_mm", value = NA)
       updateNumericInput(session, "test_diameter_mm", value = NA)
-      updateNumericInput(session, "animal_wet_mass_g", value = NA)
-      updateNumericInput(session, "animal_24hr_mass_g", value = NA)
+      updateNumericInput(session, "wet_mass_g", value = NA)
+      updateNumericInput(session, "wet_mass_24hr_g", value = NA)
       updateNumericInput(session, "gonad_wet_mass_g", value = NA)
-      updateNumericInput(session, "soft_tissue_mass_g", value = NA) 
+      updateNumericInput(session, "soft_tissue_mass_g", value = NA)
       updateTextInput(session, "notes", value = "")
     })
   })
   
-  # Reactive function to clear all fields
   observeEvent(input$clear_fields, {
     updateSelectInput(session, "institution", selected = "MBA")
-    updateTextInput(session, "other_institution", value = "")
+    updateTextInput(session, "institution_other", value = "")
+    updateTextInput(session, "observer_initials", value = "")
     updateDateInput(session, "date_collected", value = NULL)
     updateDateInput(session, "date_fixed", value = NULL)
-    updateDateInput(session, "date_processed", value = NULL)
+    updateDateInput(session, "date_dissected", value = NULL)
     updateTextInput(session, "site_number", value = "")
-    updateTextInput(session, "treatment", value = "")
-    updateTextInput(session, "species", value = "")
+    updateTextInput(session, "transect", value = "")
+    updateSelectInput(session, "treatment", selected = "5mmol MgCL")
+    updateSelectInput(session, "species", selected = "")
     updateTextInput(session, "sample_number", value = "")
+    updateSelectInput(session, "sex", selected = "")
     updateNumericInput(session, "test_height_mm", value = NA)
     updateNumericInput(session, "test_diameter_mm", value = NA)
-    updateNumericInput(session, "animal_wet_mass_g", value = NA)
-    updateNumericInput(session, "animal_24hr_mass_g", value = NA)
+    updateNumericInput(session, "wet_mass_g", value = NA)
+    updateNumericInput(session, "wet_mass_24hr_g", value = NA)
     updateNumericInput(session, "gonad_wet_mass_g", value = NA)
-    updateNumericInput(session, "soft_tissue_mass_g", value = NA) 
+    updateNumericInput(session, "soft_tissue_mass_g", value = NA)
     updateTextInput(session, "notes", value = "")
   })
   
-  # Function to push data to Google Sheets
   push_to_sheets <- function() {
-    # Check if data is a data frame
-    if (!is.data.frame(data())) {
+    if (nrow(data()) == 0) {
       showModal(modalDialog(
-        title = "Error",
-        "Data is not in the correct format.",
-        footer = tagList(
-          modalButton("Dismiss")
-        )
+        title = "No Data",
+        "No data to push to Google Sheets.",
+        footer = modalButton("OK")
       ))
       return()
     }
-    
-    # Push data to Google Sheets
-    googlesheets4::sheet_append(sheet_id, data())
+    gs4_auth(email = TRUE, cache = "tokens/.secrets")
+    sheet_append(sheet_id, data())
   }
   
-  # Event handler for pushing data to Google Sheets
   observeEvent(input$push_to_sheets, {
     showModal(modalDialog(
-      title = "Confirmation",
-      "Are you sure? This action will push data to the server.",
+      title = "Confirm Push to Google Sheets",
+      "Are you sure you want to push the data to Google Sheets?",
       footer = tagList(
-        actionButton("yes_push", "Yes", class = "btn-primary"),
-        modalButton("Cancel")
+        modalButton("Cancel"),
+        actionButton("yes_push", "Yes")
       )
     ))
   })
   
-  # Event handler for "Yes" button in the confirmation dialog
   observeEvent(input$yes_push, {
     removeModal()
-    push_to_sheets() # This function pushes the data
-    
-    # Show a modal dialog to confirm that data has been pushed
+    push_to_sheets()
     showModal(modalDialog(
       title = "Data Pushed to Google Sheets",
       "Data has been successfully pushed to Google Sheets."
     ))
-    
-    # Reset the data reactive variable to its initial empty state
     data(data.frame(
-      Institution = character(), # Added this line
-      Data_Enterer = character(),
+      Institution = character(),
+      Observer_Initials = character(),
       Date_Collected = character(),
       Date_Fixed = character(),
-      Date_Processed = character(),
+      Date_Dissected = character(),
       Site_Number = character(),
+      Transect = character(),
       Treatment = character(),
       Species = character(),
       Sample_Number = character(),
+      Sex = character(),
       Test_Height_mm = numeric(),
       Test_Diameter_mm = numeric(),
-      Animal_Wet_Mass_g = numeric(),
-      Animal_24hr_Mass_g = numeric(),
+      Wet_Mass_g = numeric(),
+      Wet_Mass_24hr_g = numeric(),
       Gonad_Wet_Mass_g = numeric(),
-      Soft_Tissue_Mass_g = numeric(), 
+      Soft_Tissue_Mass_g = numeric(),
       Notes = character(),
-      Date_Entered = character(),
       stringsAsFactors = FALSE
     ))
-    
-    # Clear all input fields to reflect the reset in the UI
     updateSelectInput(session, "institution", selected = "MBA")
-    updateTextInput(session, "other_institution", value = "")
+    updateTextInput(session, "institution_other", value = "")
+    updateTextInput(session, "observer_initials", value = "")
     updateDateInput(session, "date_collected", value = NULL)
     updateDateInput(session, "date_fixed", value = NULL)
-    updateDateInput(session, "date_processed", value = NULL)
+    updateDateInput(session, "date_dissected", value = NULL)
     updateTextInput(session, "site_number", value = "")
-    updateTextInput(session, "treatment", value = "")
-    updateTextInput(session, "species", value = "")
+    updateTextInput(session, "transect", value = "")
+    updateSelectInput(session, "treatment", selected = "5mmol MgCL")
+    updateSelectInput(session, "species", selected = "")
     updateTextInput(session, "sample_number", value = "")
+    updateSelectInput(session, "sex", selected = "")
     updateNumericInput(session, "test_height_mm", value = NA)
     updateNumericInput(session, "test_diameter_mm", value = NA)
-    updateNumericInput(session, "animal_wet_mass_g", value = NA)
-    updateNumericInput(session, "animal_24hr_mass_g", value = NA)
+    updateNumericInput(session, "wet_mass_g", value = NA)
+    updateNumericInput(session, "wet_mass_24hr_g", value = NA)
     updateNumericInput(session, "gonad_wet_mass_g", value = NA)
-    updateNumericInput(session, "soft_tissue_mass_g", value = NA) 
+    updateNumericInput(session, "soft_tissue_mass_g", value = NA)
     updateTextInput(session, "notes", value = "")
   })
   
-  
-  # Render data table
   output$data_table <- renderDT({
     datatable(data(),
               rownames = FALSE,
@@ -287,26 +281,28 @@ server <- function(input, output, session) {
                 "table.on('click', 'button.edit', function () {
                     var data = table.row($(this).parents('tr')).data();
                     $('#institution').val(data[0]);
-                    $('#data_enterer').val(data[1]);
-                    $('#date_collected').val(data[2]);
-                    $('#date_fixed').val(data[3]);
-                    $('#date_processed').val(data[4]);
-                    $('#site_number').val(data[5]);
-                    $('#treatment').val(data[6]);
-                    $('#species').val(data[7]);
-                    $('#sample_number').val(data[8]);
-                    $('#test_height_mm').val(data[9]);
-                    $('#test_diameter_mm').val(data[10]);
-                    $('#animal_wet_mass_g').val(data[11]);
-                    $('#animal_24hr_mass_g').val(data[12]);
-                    $('#gonad_wet_mass_g').val(data[13]);
-                    $('#soft_tissue_mass_g').val(data[14]);
-                    $('#notes').val(data[15]);
+                    $('#institution_other').val(data[1]);
+                    $('#observer_initials').val(data[2]);
+                    $('#date_collected').val(data[3]);
+                    $('#date_fixed').val(data[4]);
+                    $('#date_dissected').val(data[5]);
+                    $('#site_number').val(data[6]);
+                    $('#transect').val(data[7]);
+                    $('#treatment').val(data[8]);
+                    $('#species').val(data[9]);
+                    $('#sample_number').val(data[10]);
+                    $('#sex').val(data[11]);
+                    $('#test_height_mm').val(data[12]);
+                    $('#test_diameter_mm').val(data[13]);
+                    $('#wet_mass_g').val(data[14]);
+                    $('#wet_mass_24hr_g').val(data[15]);
+                    $('#gonad_wet_mass_g').val(data[16]);
+                    $('#soft_tissue_mass_g').val(data[17]);
+                    $('#notes').val(data[18]);
                 });"
               )
     )
   })
 }
 
-# Run the application
 shinyApp(ui = ui, server = server)
